@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\YoutubePlayList;
+use App\YoutubeVideoThumbnail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use App\Http\Resources\YoutubePlayListResource;
+use Illuminate\Validation\Rule; 
 
-class YoutubePlayListController extends Controller
+class YoutubeVideoThumbnailController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -20,14 +20,17 @@ class YoutubePlayListController extends Controller
         $date = $request->input('date');
 
         if ($date) {
-            $youtubePlayLists = YoutubePlayList::where('published_at', '>=', $date)->get();
+            $youtubeThumbnails = YoutubeVideoThumbnail::join('youtube_videos', 'youtube_video_thumbnails.video_id', 'youtube_videos.id')
+                ->select('youtube_video_thumbnails.*')
+                ->where('youtube_videos.published_at', '>=', $date)
+                ->get();
         } else {
-            $youtubePlayLists = YoutubePlayList::all();
+            $youtubeThumbnails = YoutubeVideoThumbnail::all();
         }
 
         return response()->json([
-            'items' => $youtubePlayLists
-        ], 200);
+            'items' => $youtubeThumbnails
+        ]);
     }
 
     /**
@@ -49,37 +52,36 @@ class YoutubePlayListController extends Controller
     public function store(Request $request)
     {
         $input = $request->only([
-            'id', 'title', 'description', 'published_at'
+            'video_id', 'video_type_id'
         ]);
 
         $validator = Validator::make($input, [
-            'id' => 'required|string|unique:youtube_play_lists',
-            'title' => 'required|string',
-            'description' => 'string',
-            'published_at' => 'required|date'
+            'video_id' => 'required|string|exists:youtube_videos,id',
+            'video_type_id' => ['required', 'string', 'exists:youtube_video_types,id', Rule::unique('youtube_video_thumbnails')->where(function($query){
+                global $request;
+                return $query->where('video_id', $request->input('video_id'));
+            })]
         ]);
 
-        if ($validator->fails())  {
+        if ($validator->fails()) {
             return response()->json([
                 'message' => $validator->errors(),
                 'data' => $input
             ], 400);
         }
 
-        $input['published_at'] = date('Y-m-d H:i:s', strtotime($input['published_at']));
+        $youtubeThumbnail = YoutubeVideoThumbnail::create($input);
 
-        $youtubePlayList = YoutubePlayList::create($input);
-
-        return response()->json($youtubePlayList);
+        return response()->json($youtubeThumbnail, 200);
     }
 
     /**
      * Display the specified resource.
      *
-     * @param  \App\YoutubePlayList  $youtubePlayList
+     * @param  \App\YoutubeThumbnail  $youtubeThumbnail
      * @return \Illuminate\Http\Response
      */
-    public function show(YoutubePlayList $youtubePlayList)
+    public function show(YoutubeThumbnail $youtubeThumbnail)
     {
         //
     }
@@ -87,10 +89,10 @@ class YoutubePlayListController extends Controller
     /**
      * Show the form for editing the specified resource.
      *
-     * @param  \App\YoutubePlayList  $youtubePlayList
+     * @param  \App\YoutubeThumbnail  $youtubeThumbnail
      * @return \Illuminate\Http\Response
      */
-    public function edit(YoutubePlayList $youtubePlayList)
+    public function edit(YoutubeThumbnail $youtubeThumbnail)
     {
         //
     }
@@ -99,10 +101,10 @@ class YoutubePlayListController extends Controller
      * Update the specified resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @param  \App\YoutubePlayList  $youtubePlayList
+     * @param  \App\YoutubeThumbnail  $youtubeThumbnail
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, YoutubePlayList $youtubePlayList)
+    public function update(Request $request, YoutubeThumbnail $youtubeThumbnail)
     {
         //
     }
@@ -110,10 +112,10 @@ class YoutubePlayListController extends Controller
     /**
      * Remove the specified resource from storage.
      *
-     * @param  \App\YoutubePlayList  $youtubePlayList
+     * @param  \App\YoutubeThumbnail  $youtubeThumbnail
      * @return \Illuminate\Http\Response
      */
-    public function destroy(YoutubePlayList $youtubePlayList)
+    public function destroy(YoutubeThumbnail $youtubeThumbnail)
     {
         //
     }

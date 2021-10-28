@@ -20,5 +20,6 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 Route::resource('youtube-play-lists', 'Api\YoutubePlayListController');
 Route::resource('youtube-play-list-items', 'Api\YoutubePlayListItemController');
-Route::resource('youtube-thumbnails', 'Api\YoutubeThumbnailController');
+Route::resource('youtube-videos', 'Api\YoutubeVideoController');
+Route::resource('youtube-video-thumbnails', 'Api\YoutubeVideoThumbnailController');
 // Route::post('/youtube-play-list', 'Api\YoutubePlayListController')

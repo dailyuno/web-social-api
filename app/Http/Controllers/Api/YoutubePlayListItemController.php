@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\YoutubePlayListItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class YoutubePlayListItemController extends Controller
 {
@@ -16,17 +17,17 @@ class YoutubePlayListItemController extends Controller
      */
     public function index(Request $request)
     {
-        $date = $request->date;
+        $date = $request->input('date');
 
         if ($date) {
-            $youtubePlayListItems = YoutubePlayListItem::where('publishedAt', '>=', $date)->get();
+            $youtubePlayListItems = YoutubePlayListItem::where('published_at', '>=', $date)->get();
         } else {
             $youtubePlayListItems = YoutubePlayListItem::all();
         }
 
         return response()->json([
             'items' => $youtubePlayListItems
-        ]);
+        ], 200);
     }
 
     /**
@@ -48,17 +49,16 @@ class YoutubePlayListItemController extends Controller
     public function store(Request $request)
     {
         $input = $request->only([
-            'id', 'youtube_play_lists_id', 'title', 'description', 'publishedAt'
+            'play_list_id', 'video_id', 'published_at'
         ]);
 
-        $input['publishedAt'] = date('Y-m-d H:i:s', strtotime($input['publishedAt']));
-
-        $validator = Validator::make($input, [
-            'id' => 'required|string|unique:youtube_play_list_items',
-            'youtube_play_lists_id' => 'required|string|exists:youtube_play_lists,id',
-            'title' => 'required|string',
-            'description' => 'nullable|string',
-            'publishedAt' => 'required|date'
+        $validator= Validator::make($input, [
+            'play_list_id' => 'required|string|exists:youtube_play_lists,id',
+            'video_id' => ['required', 'string', 'exists:youtube_videos,id', Rule::unique('youtube_play_list_items')->where(function($query){
+                global $request;
+                return $query->where('play_list_id', $request->input('play_list_id'));
+            })],
+            'published_at' => 'required|date'
         ]);
 
         if ($validator->fails())  {
@@ -68,12 +68,11 @@ class YoutubePlayListItemController extends Controller
             ], 400);
         }
 
+        $input['published_at'] = date('Y-m-d H:i:s', strtotime($input['published_at']));
+
         $youtubePlayListItem = YoutubePlayListItem::create($input);
 
-        return response()->json([
-            'data' => $youtubePlayListItem,
-            'message' => 'success created'   
-        ]);
+        return response()->json($youtubePlayListItem);
     }
 
     /**
