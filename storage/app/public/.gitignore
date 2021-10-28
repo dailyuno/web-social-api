@@ -1,2 +1,5 @@
-*
 !.gitignore
+!videos.json
+!video_thumbnails.json
+!play_lists.json
+!play_list_items.json

@@ -11,6 +11,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        // $this->call(UserSeeder::class);
+        $this->call([
+            YoutubeVideoTypeSeeder::class,
+            YoutubeVideoSeeder::class,
+            YoutubeVideoThumbnailSeeder::class,
+            YoutubePlayListSeeder::class,
+            YoutubePlayListItemSeeder::class,
+        ]);
     }
 }
