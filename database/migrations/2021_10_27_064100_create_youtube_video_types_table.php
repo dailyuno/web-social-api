@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateYoutubePlayListsTable extends Migration
+class CreateYoutubeVideoTypesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,11 +13,11 @@ class CreateYoutubePlayListsTable extends Migration
      */
     public function up()
     {
-        Schema::create('youtube_play_lists', function (Blueprint $table) {
+        Schema::create('youtube_video_types', function (Blueprint $table) {
             $table->string('id')->primary();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->dateTimeTz('published_at')->nullable();
+            $table->string('name');
+            $table->integer('width');
+            $table->integer('height');
         });
     }
 
@@ -28,6 +28,6 @@ class CreateYoutubePlayListsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('youtube_play_lists');
+        Schema::dropIfExists('youtube_video_types');
     }
 }
