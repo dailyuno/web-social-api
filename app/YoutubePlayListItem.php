@@ -10,5 +10,17 @@ class YoutubePlayListItem extends Model
 
     public $timestamps = false;
 
-    public $incrementing = false;
+    public $incrementing = false; 
+
+    public $keyType = 'string';
+
+    public function playlist()
+    {
+        return $this->belongsTo('App\YoutubePlayList');
+    }
+
+    public function video()
+    {
+        return $this->belongsTo('App\YoutubeVideo');
+    }
 }

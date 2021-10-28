@@ -4,7 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class YoutubePlayList extends Model
+class YoutubeVideoType extends Model
 {
     protected $guarded = [];
 
@@ -13,9 +13,4 @@ class YoutubePlayList extends Model
     public $incrementing = false; 
     
     public $keyType = 'string';
-
-    public function play_list_items()
-    {
-        return $this->hasMany('App\YoutubePlayListItem', 'play_list_id');
-    }
 }
