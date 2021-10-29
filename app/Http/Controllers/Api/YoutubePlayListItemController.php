@@ -34,12 +34,15 @@ class YoutubePlayListItemController extends Controller
 
     public function getYoutubePlayListItems($lang, $count) {
         $youtubePlayListItems = Cache::remember('youtube_play_list_items' . $lang, 60 * 60, function () use ($lang, $count) {
-            $items = YoutubePlayListItem::join('youtube_play_lists', 'youtube_play_lists.id', 'youtube_play_list_items.play_list_id')
-                ->join('youtube_videos', 'youtube_videos.id', 'youtube_play_list_items.video_id')
-                ->where('youtube_play_lists.lang', $lang)
-                ->where('youtube_videos.published_at', '<>', null)
-                ->select(['youtube_play_list_items.*', 'youtube_play_lists.lang'])
-                ->orderBy('published_at', 'desc')
+            $items = YoutubePlayListItem::join('youtube_videos', 'youtube_videos.id', 'youtube_play_list_items.video_id')
+                ->whereNotNull('youtube_videos.published_at')
+                ->when($lang === 'en', function($query) use ($lang) {
+                    $query
+                        ->join('youtube_play_lists', 'youtube_play_lists.id', 'youtube_play_list_items.play_list_id')
+                        ->where('youtube_play_lists.lang', $lang);
+                })
+                ->select('youtube_play_list_items.*')
+                ->orderBy('youtube_videos.published_at', 'desc')
                 ->take($count)
                 ->get();
             return $items;
