@@ -18,6 +18,9 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+Route::get('youtube-play-list-items/kr', 'Api\YoutubePlayListItemController@kr');
+Route::get('youtube-play-list-items/en', 'Api\YoutubePlayListItemController@en');
+
 Route::resource('youtube-play-lists', 'Api\YoutubePlayListController');
 Route::resource('youtube-play-list-items', 'Api\YoutubePlayListItemController');
 Route::resource('youtube-videos', 'Api\YoutubeVideoController');

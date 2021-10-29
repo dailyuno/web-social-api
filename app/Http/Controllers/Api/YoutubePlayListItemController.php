@@ -7,6 +7,7 @@ use App\YoutubePlayListItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use App\Http\Resources\YoutubePlayListItemResource;
 
 class YoutubePlayListItemController extends Controller
 {
@@ -27,6 +28,36 @@ class YoutubePlayListItemController extends Controller
 
         return response()->json([
             'items' => $youtubePlayListItems
+        ], 200);
+    }
+
+    public function getYoutubePlayListItems($lang, $count) {
+        $youtubePlayListItems = YoutubePlayListItem::join('youtube_play_lists', 'youtube_play_lists.id', 'youtube_play_list_items.play_list_id')
+            ->join('youtube_videos', 'youtube_videos.id', 'youtube_play_list_items.video_id')
+            ->where('youtube_play_lists.lang', $lang)
+            ->where('youtube_videos.published_at', '<>', null)
+            ->select(['youtube_play_list_items.*', 'youtube_play_lists.lang'])
+            ->orderBy('published_at', 'desc')
+            ->take($count)
+            ->get();
+        return $youtubePlayListItems;
+    }
+
+    public function kr()
+    {
+        $youtubePlayListItems = $this->getYoutubePlayListItems('kr', 5);
+
+        return response()->json([
+            'items' => YoutubePlayListItemResource::collection($youtubePlayListItems)
+        ], 200);
+    }
+
+    public function en()
+    {
+        $youtubePlayListItems = $this->getYoutubePlayListItems('en', 5);
+
+        return response()->json([
+            'items' => YoutubePlayListItemResource::collection($youtubePlayListItems)
         ], 200);
     }
 
