@@ -33,7 +33,7 @@ class YoutubePlayListItemController extends Controller
     }
 
     public function getYoutubePlayListItems($lang, $count) {
-        $youtubePlayListItems = Cache::remember('youtube_play_list_items', 60 * 60, function () use ($lang, $count) {
+        $youtubePlayListItems = Cache::remember('youtube_play_list_items' . $lang, 60 * 60, function () use ($lang, $count) {
             $items = YoutubePlayListItem::join('youtube_play_lists', 'youtube_play_lists.id', 'youtube_play_list_items.play_list_id')
                 ->join('youtube_videos', 'youtube_videos.id', 'youtube_play_list_items.video_id')
                 ->where('youtube_play_lists.lang', $lang)
