@@ -18,6 +18,7 @@ class CreateYoutubePlayListsTable extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->dateTimeTz('published_at')->nullable();
+            $table->enum('lang', ['kr', 'en'])->default('kr');
         });
     }
 
