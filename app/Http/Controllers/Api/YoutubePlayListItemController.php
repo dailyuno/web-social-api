@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\YoutubePlayListItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 use App\Http\Resources\YoutubePlayListItemResource;
 
@@ -32,14 +33,18 @@ class YoutubePlayListItemController extends Controller
     }
 
     public function getYoutubePlayListItems($lang, $count) {
-        $youtubePlayListItems = YoutubePlayListItem::join('youtube_play_lists', 'youtube_play_lists.id', 'youtube_play_list_items.play_list_id')
-            ->join('youtube_videos', 'youtube_videos.id', 'youtube_play_list_items.video_id')
-            ->where('youtube_play_lists.lang', $lang)
-            ->where('youtube_videos.published_at', '<>', null)
-            ->select(['youtube_play_list_items.*', 'youtube_play_lists.lang'])
-            ->orderBy('published_at', 'desc')
-            ->take($count)
-            ->get();
+        $youtubePlayListItems = Cache::remember('youtube_play_list_items', 60 * 60, function () use ($lang, $count) {
+            $items = YoutubePlayListItem::join('youtube_play_lists', 'youtube_play_lists.id', 'youtube_play_list_items.play_list_id')
+                ->join('youtube_videos', 'youtube_videos.id', 'youtube_play_list_items.video_id')
+                ->where('youtube_play_lists.lang', $lang)
+                ->where('youtube_videos.published_at', '<>', null)
+                ->select(['youtube_play_list_items.*', 'youtube_play_lists.lang'])
+                ->orderBy('published_at', 'desc')
+                ->take($count)
+                ->get();
+            return $items;
+        });
+
         return $youtubePlayListItems;
     }
 
