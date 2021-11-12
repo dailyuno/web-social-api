@@ -1,18 +1,23 @@
 class App {
     constructor() {
         this.date = (new SimpleDate).subtract(7, 'days').format('Y-m-dT00:00:00Z');
+        this.playListFactory = new PlayListFactory();
+        this.playListItemFactory = new PlayListItemFactory();
+        this.videoFactory = new VideoFactory();
+
         this.init();
     }
 
     async init() {
-        const { date } = this;
-        this.storedPlayLists = await this.getPlayLists();
-        this.storedPlayListItems = await this.getPlayListItems(date);
-        this.storedVideos = await this.getVideos(date);
+        const { playListFactory, playListItemFactory, videoFactory } = this;
+
+        await playListFactory.init();
+        await playListItemFactory.init();
+        await videoFactory.init();
 
         console.log((new SimpleDate).format('Y-m-d H:i:s'));
 
-        await this.createItems();
+        await this.setItems();
 
         console.log('done');
         console.log((new SimpleDate).format('Y-m-d H:i:s'));
@@ -34,48 +39,13 @@ class App {
         return false;
     }
 
-    async getPlayLists(date) {
-        try {
-            const response = await axios.get(`/api/youtube-play-lists?date=${date}`);
-            const { data } = response;
-            const { items } = data;
-            return items;
-        } catch (e) {
-            console.log(e.response);
+    convertDate(published_at) {
+        if (!published_at) {
+            return null;
         }
-    }
 
-    async getPlayListItems(date) {
-        try {
-            const response = await axios.get(`/api/youtube-play-list-items?date=${date}`);
-            const { data } = response;
-            const { items } = data;
-            return items;
-        } catch (e) {
-            console.log(e.response);
-        }
-    }
-
-    async getVideos(date) {
-        try {
-            const response = await axios.get(`/api/youtube-videos?date=${date}`);
-            const { data } = response;
-            const { items } = data;
-            return items;
-        } catch (e) {
-            console.log(e.response);
-        }
-    }
-
-    async getThumbnails(date) {
-        try {
-            const response = await axios.get(`/api/youtube-thumbnails?date=${date}`);
-            const { data } = response;
-            const { items } = data;
-            return items;
-        } catch (e) {
-            console.log(e.response);
-        }
+        const d = new SimpleDate(published_at);
+        return d.format('Y-m-d H:i:s');
     }
 
     /**
@@ -83,177 +53,132 @@ class App {
      * 채널 재생목록 리스트를 가지고 오고,
      * 데이터들 DB에 넣는 작업
      */
-    async createItems() {
+    async setItems() {
         try {
-            const playLists = await YoutubeApi.getPlayLists();
+            await this.setPlayLists();
 
-            console.log(playLists)
-            console.log(`${playLists.length}개 채널 발견`);
+            const { playListFactory } = this;
+            const { items } = playListFactory;
 
-            for (let i = 0; i < playLists.length; i++) {
-                const playList = playLists[i];
-                const { id, snippet } = playList;
+            for (let i = 0; i < items.length; i++) {
+                const playList = items[i];
+                const { id } = playList;
+                await this.setPlayListItems(id);
+            }
+        } catch (e) {
+            console.log(e.response);
+        }
+    }
+
+    async setPlayLists(pageToken = null) {
+        try {
+            const { items, nextPageToken } = await YoutubeApi.getPlayLists(pageToken);
+
+            console.log(items)
+            console.log(`${items.length}개 플레이리스트 발견`);
+
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const { id, snippet } = item;
                 const { title, publishedAt } = snippet;
 
-                await this.createPlayList(id, title, publishedAt);
-                await this.createPlayListItems(id);
+                await this.setPlayList(id, title, publishedAt);
             }
 
-            const playListsId = playLists.map(x => x.id);
-            const filterPlayLists = this.storedPlayLists.filter(x => playListsId.indexOf(x.id) < 0);
-
-            for (let i = 0; i < filterPlayLists.length; i++) {
-                const playList = filterPlayLists[i];
-                const { id } = playList;
-                await this.createPlayListItems(id);
+            if (nextPageToken) {
+                await this.setPlayLists(nextPageToken);
             }
         } catch (e) {
-            console.log(e.response);
+            console.log(e);
         }
     }
 
-    /**
-     * 유튜브 채널 - 재생목록 리스트를 DB에 추가
-     */
-    async createPlayList(id, title, publishedAt) {
-        try {
-            if (this.existsPlayList(id)) {
-                return;
-            }
+    setPlayList(id, title, published_at) {
+        const { playListFactory } = this;
 
-            const response = await axios.post('/api/youtube-play-lists', {
-                id,
-                title,
-                published_at: publishedAt
-            });
-            const { data } = response;
-
-            this.storedPlayLists.push(data);
-        } catch (e) {
-            console.log(e.response);
-        }
-    }
-
-    /**
-     * DB에 재생목록 리스트가 있는지 확인
-     * @param {*} id 
-     * @returns 
-     */
-    existsPlayList(id) {
-        const { storedPlayLists } = this;
-
-        if (storedPlayLists.map(x => x.id).indexOf(id) < 0) {
-            return false;
+        if (playListFactory.exists(id)) {
+            return;
         }
 
-        return true;
+        return playListFactory.create({
+            id,
+            title,
+            published_at: this.convertDate(published_at)
+        });
     }
 
     /**
      * 유튜브 재생목록의 영상들 가지고 와서 세팅
-     * @param {String} id (play_list_id)
+     * @param {String} playListId
      */
-    async createPlayListItems(id) {
+    async setPlayListItems(playListId, pageToken = null) {
         try {
-            const playListItems = await YoutubeApi.getPlayListItems(id);
+            const { playListFactory } = this;
+            const playList = playListFactory.find(playListId);
+            const { title } = playList;
+            const { items, nextPageToken } = await YoutubeApi.getPlayListItems(playListId, pageToken);
 
-            console.log(`동영상 ${playListItems.length}개 발견`)
+            console.log(`${title} 동영상 ${items.length}개 발견`)
 
-            for (let i = 0; i < playListItems.length; i++) {
-                const playListItem = playListItems[i];
-                const { snippet, contentDetails } = playListItem;
-                const { title, description, thumbnails, publishedAt, playlistId } = snippet;
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const { snippet, contentDetails } = item;
+                const { title, description, thumbnails, publishedAt } = snippet;
                 const { videoId, videoPublishedAt } = contentDetails;
 
-                await this.createVideo(videoId, title, description, videoPublishedAt, Object.keys(thumbnails));
-                await this.createPlayListItem(playlistId, videoId, publishedAt);
+                await this.setVideo(videoId, title, description, videoPublishedAt, Object.keys(thumbnails));
+                await this.setPlayListItem(playListId, videoId, publishedAt);
+            }
+
+            if (nextPageToken) {
+                await this.setPlayListItems(playListId, nextPageToken);
             }
         } catch (e) {
+            console.log(e);
             console.log(e.response);
         }
     }
 
-    async createVideo(id, title, description, publishedAt, thumbnails) {
-        try {
-            if (this.existsVideo(id)) {
+    async setVideo(id, title, description, published_at = null, thumbnails) {
+        const { videoFactory } = this;
+        const params = {
+            id,
+            title,
+            description: description === '' ? null : description,
+            published_at: this.convertDate(published_at)
+        };
+
+        if (videoFactory.exists(id)) {
+            const video = videoFactory.find(id);
+
+            if (_.isEqual(video, params)) {
                 return;
             }
 
-            if (this.isBeforeDate(publishedAt)) {
-                return;
-            }
-
-            const response = await axios.post('/api/youtube-videos', {
-                id,
-                title,
-                description,
-                published_at: publishedAt,
-                thumbnails
-            });
-            const { data } = response;
-            this.storedVideos.push(data);
-
-            return data;
-        } catch (e) {
-            console.log(id, title, description, publishedAt, thumbnails);
-            console.log(e.response);
+            console.log(video, params);
+            console.log('영상 수정');
+            return videoFactory.update(id, params);
         }
+
+        console.log('영상 생성');
+        return videoFactory.create({
+            thumbnails,
+            ...params
+        });
     }
 
-    /**
-     * DB에 영상이 이미 삽입 되어있는지 확인
-     * @param {String} id
-     * @returns
-     */
-    existsVideo(id) {
-        const { storedVideos } = this;
+    async setPlayListItem(play_list_id, video_id, published_at) {
+        const { playListItemFactory } = this;
 
-        if (storedVideos.map(x => x.id).indexOf(id) < 0) {
-            return false;
+        if (playListItemFactory.exists(play_list_id, video_id)) {
+            return;
         }
 
-        return true;
-    }
-
-    /**
-     * 유튜브 재생목록의 영상을 DB에 넣는 함수
-     */
-    async createPlayListItem(playlistId, videoId, publishedAt) {
-        try {
-            if (this.existsPlayListItem(playlistId, videoId)) {
-                return;
-            }
-
-            if (this.isBeforeDate(publishedAt)) {
-                return;
-            }
-
-            const response = await axios.post('/api/youtube-play-list-items', {
-                play_list_id: playlistId,
-                video_id: videoId,
-                published_at: publishedAt
-            });
-            const { data } = response;
-
-            this.storedPlayListItems.push(data);
-        } catch (e) {
-            console.log(e.response);
-        }
-    }
-
-    /**
-     * 
-     * @param {*} id 
-     * @returns 
-     */
-    existsPlayListItem(playlistId, videoId) {
-        const { storedPlayListItems } = this;
-        const playListItem = storedPlayListItems.find(x => x.play_list_id === playlistId && x.video_id === videoId);
-
-        if (playListItem) {
-            return true;
-        }
-
-        return false;
+        console.log('플레이리스트 아이템 생성');
+        return playListItemFactory.create({
+            play_list_id,
+            video_id,
+            published_at: this.convertDate(published_at)
+        });
     }
 }

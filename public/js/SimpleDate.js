@@ -16,6 +16,9 @@ class SimpleDate {
             case 'years':
                 date.setYear(date.getFullYear() - number);
                 break;
+            case 'hours':
+                date.setHours(date.getHours() - number);
+                break;
         }
         return this;
     }
