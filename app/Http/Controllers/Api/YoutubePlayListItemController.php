@@ -107,8 +107,6 @@ class YoutubePlayListItemController extends Controller
             ], 400);
         }
 
-        $input['published_at'] = date('Y-m-d H:i:s', strtotime($input['published_at']));
-
         $youtubePlayListItem = YoutubePlayListItem::create($input);
 
         return response()->json($youtubePlayListItem);

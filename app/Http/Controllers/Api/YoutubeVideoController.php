@@ -67,10 +67,6 @@ class YoutubeVideoController extends Controller
             ], 400);
         }
 
-        if (isset($input['published_at'])) {
-            $input['published_at'] = date('Y-m-d H:i:s', strtotime($input['published_at']));
-        }
-
         $videoData = collect($input)->except('thumbnails')->all();
         $youtubeVideo = YoutubeVideo::create($videoData);
 
@@ -114,9 +110,19 @@ class YoutubeVideoController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, YoutubeVideo $youtubeVideo)
     {
-        //
+        $input = $request->only([
+            'title', 'description', 'published_at'
+        ]);
+
+        if (isset($input['published_at'])) {
+            $input['published_at'] = date('Y-m-d H:i:s', strtotime($input['published_at']));
+        }
+
+        $youtubeVideo->update($input);
+
+        return response()->json($youtubeVideo, 200);
     }
 
     /**
