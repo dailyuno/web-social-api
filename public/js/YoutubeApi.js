@@ -23,15 +23,19 @@ class YoutubeApi {
     /**
      * 유튜브 채널 - 재생목록 리스트 가지고 오기
      */
-    static async getPlayLists() {
+    static async getPlayLists(pageToken = null) {
         const { channelId, key } = YoutubeApi;
 
         try {
-            const url = `https://www.googleapis.com/youtube/v3/playlists?channelId=${channelId}&key=${key}&part=snippet&maxResults=20`;
+            let url = `https://www.googleapis.com/youtube/v3/playlists?channelId=${channelId}&key=${key}&part=snippet&maxResults=50`;
+
+            if (pageToken) {
+                url += `&pageToken=${pageToken}`;
+            }
+
             const response = await axios.get(url);
             const { data } = response;
-            const { items } = data;
-            return items;
+            return data;
         } catch (e) {
             console.log(e.response);
         }
@@ -40,15 +44,19 @@ class YoutubeApi {
     /**
      * 유튜브 재생목록의 영상들 가지고 오는 함수
      */
-    static async getPlayListItems(id) {
+    static async getPlayListItems(id, pageToken = null) {
         try {
             const { key } = YoutubeApi;
 
-            const url = `https://www.googleapis.com/youtube/v3/playlistItems?playlistId=${id}&key=${key}&part=snippet,contentDetails&maxResults=50`;
+            let url = `https://www.googleapis.com/youtube/v3/playlistItems?playlistId=${id}&key=${key}&part=snippet,contentDetails&maxResults=50`;
+
+            if (pageToken) {
+                url += `&pageToken=${pageToken}`;
+            }
+
             const response = await axios.get(url);
             const { data } = response;
-            const { items } = data;
-            return items;
+            return data;
         } catch (e) {
             console.log(e.response);
         }
