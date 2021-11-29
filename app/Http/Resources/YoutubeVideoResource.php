@@ -14,10 +14,12 @@ class YoutubeVideoResource extends JsonResource
      */
     public function toArray($request)
     {
-        $parent = parent::toArray($request);
-        
-        return array_merge($parent, [
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'description' => $this->description,
+            'publishedAt' => $this->published_at,
             'thumbnails' => YoutubeVideoThumbnailResource::collection($this->thumbnails)
-        ]);
+        ];
     }
 }
