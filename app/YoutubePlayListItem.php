@@ -23,4 +23,9 @@ class YoutubePlayListItem extends Model
     {
         return $this->belongsTo('App\YoutubeVideo');
     }
+
+    public function thumbnails()
+    {
+        return $this->hasMany('App\YoutubeVideoThumbnail', 'video_id');
+    }
 }

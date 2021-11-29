@@ -20,3 +20,5 @@ Route::get('/', function () {
 Route::get('/social-media/crontab', function() {
     return view('social-media');
 });
+
+Route::resource('youtube', 'YoutubeController');
