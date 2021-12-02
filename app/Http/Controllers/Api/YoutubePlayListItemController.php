@@ -154,6 +154,10 @@ class YoutubePlayListItemController extends Controller
      */
     public function destroy(YoutubePlayListItem $youtubePlayListItem)
     {
-        //
+        $youtubePlayListItem->delete();
+
+        return response()->json([
+            'message' => 'delete success'
+        ], 200);
     }
 }

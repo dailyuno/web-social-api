@@ -113,6 +113,10 @@ class YoutubePlayListController extends Controller
      */
     public function destroy(YoutubePlayList $youtubePlayList)
     {
-        //
+        $youtubePlayList->delete();
+
+        return response()->json([
+            'message' => 'delete success'
+        ], 200);
     }
 }
