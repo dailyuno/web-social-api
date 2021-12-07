@@ -53,7 +53,7 @@ class YoutubePlayListItemController extends Controller
 
     public function kr()
     {
-        $youtubePlayListItems = $this->getYoutubePlayListItems('kr', 5);
+        $youtubePlayListItems = $this->getYoutubePlayListItems('kr', 3);
 
         return response()->json([
             'items' => YoutubePlayListItemResource::collection($youtubePlayListItems)
@@ -62,7 +62,7 @@ class YoutubePlayListItemController extends Controller
 
     public function en()
     {
-        $youtubePlayListItems = $this->getYoutubePlayListItems('en', 5);
+        $youtubePlayListItems = $this->getYoutubePlayListItems('en', 3);
 
         return response()->json([
             'items' => YoutubePlayListItemResource::collection($youtubePlayListItems)
